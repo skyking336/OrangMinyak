@@ -1,130 +1,83 @@
 #include "raylib.h"
-#include "tools.hpp"
-// #include "string"
-#include "Card.hpp"
-#include "Player.hpp"
-#include "iostream"
+#include <entt/entt.hpp>
+#include <string>
+
 #include "AssetManager.hpp"
-#include "Enemy.hpp"
-#include <vector>
-#include <algorithm>
-#include "SimpleTexture.hpp"
-#include "UIObject.hpp"
+#include "Components.hpp"
+#include "RenderSystem.hpp"
 
+int main() {
+    InitWindow(1440, 810, "OilMan");
+    SetTargetFPS(60);
 
-int main()
-{
-    // Initialize Window
     const int windowWidth = 1440;
-    const int windowHeight = 810;
-    
-    // Virtual resolution
+    const int windowHeight = 810;  
+
     const int virtualWidth = 1440;
     const int virtualHeight = 810;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-
-    InitWindow(windowWidth, windowHeight, "OilMan");
-    SetTargetFPS(60);
     ToggleBorderlessWindowed();
-    
+
     RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
     SetTextureFilter(target.texture, TEXTURE_FILTER_POINT); 
 
-    //global variable
-    //---------------------
-    int win = 0;
-    int lose = 0;
-
     AssetManager assets;
-    std::vector<GameObject2D*> scene_objects;
-    //---------------------
+    
+    entt::registry registry;
 
+    // ==========================================
+    // SCENE SETUP
+    // ask the registry to create an ID, 
+    // and then we 'emplace' (attach) data components to that ID
+    // ==========================================
 
-    //In game objects declaration and initialization
-    Deck gameDeck = Deck();
-    gameDeck.initDeck();
+    // Background Entity
+    auto bgEntity = registry.create();
+    registry.emplace<TransformComponent>(bgEntity, Vector2{720.0f, 405.0f}, Vector2{0.5f, 0.5f});
+    registry.emplace<RenderComponent>(bgEntity, WHITE, false, -1);
+    registry.emplace<SpriteComponent>(bgEntity, "assets/Background.png");
 
-    Player player = Player();
-    player.addIntoHand(gameDeck.drawCard(3));
+    // Enemy Entity (Oilman)
+    auto enemyEntity = registry.create();
+    registry.emplace<TransformComponent>(enemyEntity, Vector2{720.0f, 405.0f});
+    registry.emplace<RenderComponent>(enemyEntity, WHITE, false, 0);
+    registry.emplace<SpriteComponent>(enemyEntity, "assets/Oilman.png"); 
+    registry.emplace<EnemyComponent>(enemyEntity); 
 
-    Enemy oilman = Enemy();
-    oilman.position.x = virtualWidth/2;
-    oilman.position.y = virtualHeight/2;
-    oilman.zIndex = 0; 
-    scene_objects.push_back(&oilman);
-
-    SimpleTexture background = SimpleTexture("assets/Background.png");
-    background.position.x = virtualWidth/2;
-    background.position.y = virtualHeight/2;
-    background.zIndex = -1;
-    background.scale = {0.5f, 0.5f};
-    scene_objects.push_back(&background);
-
+    // Card Entities
     int x = -500;
-    for (Card& c : player.getHand()){
-        std::cout << c.rank << "\n";
-        c.position.x = (virtualWidth/2) + x;
-        c.position.y = (virtualHeight/2) + 300;
-        c.scale = {2.0f, 2.0f};
-        c.zIndex = 1; 
+    for (int i = 0; i < 3; i++) {
+        auto cardEntity = registry.create();
+        registry.emplace<TransformComponent>(cardEntity, Vector2{720.0f + x, 405.0f + 300.0f}, Vector2{2.0f, 2.0f});
+        registry.emplace<RenderComponent>(cardEntity, WHITE, false, 1);
+        registry.emplace<CardComponent>(cardEntity, i);
+        registry.emplace<SpriteComponent>(cardEntity, "assets/Card.png");
+        registry.emplace<TextComponent>(cardEntity, std::to_string(i), "assets/fonts/fibberish.ttf", BLACK, 45);
+        
         x += 300;
-        scene_objects.push_back(&c);
     }
-    std::cout << "Total sum : " <<  std::to_string(player.getSum()) << "\n";
 
-    UIText gameName = UIText("Oil Man Prototype", "assets/fonts/fibberish.ttf", assets);
-    gameName.position = {virtualWidth/2, virtualHeight/2};
-    scene_objects.push_back(&gameName);
+    // UI Text Entity
+    auto uiEntity = registry.create();
+    registry.emplace<TransformComponent>(uiEntity, Vector2{720.0f, 405.0f});
+    registry.emplace<RenderComponent>(uiEntity, WHITE, false, 10);
+    registry.emplace<TextComponent>(uiEntity, "Oil Man Prototype", "assets/fonts/fibberish.ttf", BLACK, 40);
 
-    UIText winAmountText = UIText("Win: ", "assets/fonts/fibberish.ttf", assets);
-    winAmountText.position = {10, 10};
-    scene_objects.push_back(&winAmountText);
+    // ==========================================
+    // GAME LOOP
+    // ==========================================
+    while (!WindowShouldClose()) {
+        
+        // LOGIC PHASE
+        // If we have a MovementSystem, call it here:
+        // MovementSystem::Update(register, run or jump)
 
-    // Main Game Loop
-    while (!WindowShouldClose())
-    {
-        // Update variables & logic here
-        //-----------------------
 
-        //-----------------------
-
-        //Drawing to screen
-        //-----------------------
+        // RENDER PHASE
         BeginTextureMode(target);
             ClearBackground(DARKGREEN);
-
-
-            std::vector<GameObject2D*> renderQueue;
-            std::vector<GameObject2D*> UIrenderQueue;
-
-            for (const auto& o : scene_objects){
-                if (o->type == ObjectType::UI){
-                    UIrenderQueue.push_back(o);
-                }
-                else{
-                    renderQueue.push_back(o);
-                }
-            }
             
-            std::stable_sort(renderQueue.begin(), renderQueue.end(), [](GameObject2D* a, GameObject2D* b) {
-                return a->zIndex < b->zIndex;
-            });
-
-            std::stable_sort(UIrenderQueue.begin(), UIrenderQueue.end(), [](GameObject2D* a, GameObject2D* b) {
-                return a->zIndex < b->zIndex;
-            });
-
-            // Draw all
-            for (GameObject2D* obj : renderQueue) {
-                obj->draw(assets);
-            }
-
-            for (GameObject2D* obj : UIrenderQueue) {
-                obj->draw(assets);
-            }
-
-
-
+            RenderSystem::Render(registry, assets);
         EndTextureMode();
         
         BeginDrawing();
@@ -132,7 +85,6 @@ int main()
             
             float scale = std::min((float)GetScreenWidth()/virtualWidth, (float)GetScreenHeight()/virtualHeight);
             
-            // Draw render texture to screen, properly scaled
             DrawTexturePro(target.texture, 
                 { 0.0f, 0.0f, (float)target.texture.width, (float)-target.texture.height },
                 { (GetScreenWidth() - ((float)virtualWidth * scale)) * 0.5f, 
@@ -140,12 +92,8 @@ int main()
                   (float)virtualWidth * scale, (float)virtualHeight * scale },
                 { 0, 0 }, 0.0f, WHITE);
         EndDrawing();
-        //-----------------------
     }
-
-    UnloadRenderTexture(target);
-
-    // 3. Clean up
+    
     CloseWindow();
     return 0;
 }

@@ -17,6 +17,7 @@ public:
     Font getOrLoadFont(const std::string& filePath) {
         if (m_fonts.find(filePath) == m_fonts.end()) {
             m_fonts[filePath] = LoadFont(filePath.c_str());
+            SetTextureFilter(m_fonts[filePath].texture, TEXTURE_FILTER_POINT);
         }
         return m_fonts[filePath]; 
     }
