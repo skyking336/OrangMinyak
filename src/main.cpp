@@ -19,9 +19,11 @@ int main()
     // Virtual resolution
     const int virtualWidth = 1440;
     const int virtualHeight = 810;
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     InitWindow(windowWidth, windowHeight, "OilMan");
     SetTargetFPS(60);
+    ToggleBorderlessWindowed();
     
     RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
@@ -73,20 +75,7 @@ int main()
 
         //Inputs
         //-----------------------
-        if (IsKeyPressed(KEY_F11))
-        {
-            int display = GetCurrentMonitor();
-            if (IsWindowFullscreen())
-            {
-                ToggleFullscreen();
-                SetWindowSize(windowWidth, windowHeight);
-            }
-            else
-            {
-                SetWindowSize(GetMonitorWidth(display), GetMonitorHeight(display));
-                ToggleFullscreen();
-            }
-        }
+        // F11 Toggle removed since game is now always fullscreen
         //-----------------------
 
 
