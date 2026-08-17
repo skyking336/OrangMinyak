@@ -1,0 +1,19 @@
+#pragma once
+#include "raylib.h"
+#include "AssetManager.hpp"
+
+class GameObject2D{
+    public:
+        Vector2 position{0.0f, 0.0f};
+        Vector2 scale{0.0f, 0.0f};
+        float rotation = 0.0f;
+        Color tint = WHITE;
+        bool hidden = true;
+
+        GameObject2D(Vector2 pos = {0.0f, 0.0f}) : position(pos){};
+        virtual ~GameObject2D() = default;
+
+        virtual void update(float dt){};
+        virtual void draw(AssetManager& assets) const = 0;
+
+};
