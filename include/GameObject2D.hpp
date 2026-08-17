@@ -5,10 +5,11 @@
 class GameObject2D{
     public:
         Vector2 position{0.0f, 0.0f};
-        Vector2 scale{0.0f, 0.0f};
+        Vector2 scale{1.0f, 1.0f};
         float rotation = 0.0f;
         Color tint = WHITE;
         bool hidden = true;
+        int zIndex = 0;
 
         GameObject2D(Vector2 pos = {0.0f, 0.0f}) : position(pos){};
         virtual ~GameObject2D() = default;

@@ -4,7 +4,7 @@
 void Enemy::draw(AssetManager& assets) const {
     if (hidden) return;
     Texture2D tex = assets.getOrLoadTexture(getTexturePath());
-    DrawTextureCentered(tex, position.x, position.y, WHITE);
+    DrawTextureCentered(tex, position, scale, rotation, tint);
     return;
     
 }
