@@ -6,6 +6,7 @@
 
 class SimpleTexture : public GameObject2D{
     public:
+        ObjectType type = ObjectType::SceneObjects;
         explicit SimpleTexture(std::string path) : TexturePath(path){};
         std::string TexturePath;
         std::string getTexturePath() const {return TexturePath;}

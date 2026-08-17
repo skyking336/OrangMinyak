@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include "SimpleTexture.hpp"
+#include "UIObject.hpp"
 
 
 int main()
@@ -27,7 +28,7 @@ int main()
     ToggleBorderlessWindowed();
     
     RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
-    SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(target.texture, TEXTURE_FILTER_POINT); 
 
     //global variable
     //---------------------
@@ -35,6 +36,7 @@ int main()
     int lose = 0;
 
     AssetManager assets;
+    std::vector<GameObject2D*> scene_objects;
     //---------------------
 
 
@@ -45,31 +47,38 @@ int main()
     Player player = Player();
     player.addIntoHand(gameDeck.drawCard(3));
 
-    Texture2D cardTexture = assets.getOrLoadTexture("assets/Card.png");
-    Texture2D monster = assets.getOrLoadTexture("assets/OilMan.png");
-    Texture2D backgr = assets.getOrLoadTexture("assets/Background.png");
-
     Enemy oilman = Enemy();
     oilman.position.x = virtualWidth/2;
     oilman.position.y = virtualHeight/2;
     oilman.zIndex = 0; 
+    scene_objects.push_back(&oilman);
 
     SimpleTexture background = SimpleTexture("assets/Background.png");
     background.position.x = virtualWidth/2;
     background.position.y = virtualHeight/2;
     background.zIndex = -1;
     background.scale = {0.5f, 0.5f};
+    scene_objects.push_back(&background);
 
-    int x = -100;
+    int x = -500;
     for (Card& c : player.getHand()){
-        std::cout << c.suit << " " << c.rank << "\n";
+        std::cout << c.rank << "\n";
         c.position.x = (virtualWidth/2) + x;
         c.position.y = (virtualHeight/2) + 300;
         c.scale = {2.0f, 2.0f};
         c.zIndex = 1; 
-        x += 100;
+        x += 300;
+        scene_objects.push_back(&c);
     }
     std::cout << "Total sum : " <<  std::to_string(player.getSum()) << "\n";
+
+    UIText gameName = UIText("Oil Man Prototype", "assets/fonts/fibberish.ttf", assets);
+    gameName.position = {virtualWidth/2, virtualHeight/2};
+    scene_objects.push_back(&gameName);
+
+    UIText winAmountText = UIText("Win: ", "assets/fonts/fibberish.ttf", assets);
+    winAmountText.position = {10, 10};
+    scene_objects.push_back(&winAmountText);
 
     // Main Game Loop
     while (!WindowShouldClose())
@@ -79,12 +88,6 @@ int main()
 
         //-----------------------
 
-        //Inputs
-        //-----------------------
-        // F11 Toggle removed since game is now always fullscreen
-        //-----------------------
-
-
         //Drawing to screen
         //-----------------------
         BeginTextureMode(target);
@@ -92,19 +95,22 @@ int main()
 
 
             std::vector<GameObject2D*> renderQueue;
-            if (!oilman.hidden) {
-                renderQueue.push_back(&oilman);
-            }
-            if (!background.hidden) {
-                renderQueue.push_back(&background);
-            }
-            for (Card& c : player.getHand()) {
-                if (!c.hidden) {
-                    renderQueue.push_back(&c);
+            std::vector<GameObject2D*> UIrenderQueue;
+
+            for (const auto& o : scene_objects){
+                if (o->type == ObjectType::UI){
+                    UIrenderQueue.push_back(o);
+                }
+                else{
+                    renderQueue.push_back(o);
                 }
             }
-
+            
             std::stable_sort(renderQueue.begin(), renderQueue.end(), [](GameObject2D* a, GameObject2D* b) {
+                return a->zIndex < b->zIndex;
+            });
+
+            std::stable_sort(UIrenderQueue.begin(), UIrenderQueue.end(), [](GameObject2D* a, GameObject2D* b) {
                 return a->zIndex < b->zIndex;
             });
 
@@ -113,9 +119,11 @@ int main()
                 obj->draw(assets);
             }
 
-            DrawTextCentered("Oil Man Prototype", virtualWidth/2, virtualHeight/2, 20, RAYWHITE);
-            DrawText(TextFormat("Win: %d", win), 0, 0, 40, RAYWHITE);
-            DrawText(TextFormat("Lose: %d", lose), 0, 30, 40, RAYWHITE);
+            for (GameObject2D* obj : UIrenderQueue) {
+                obj->draw(assets);
+            }
+
+
 
         EndTextureMode();
         
@@ -136,7 +144,6 @@ int main()
     }
 
     UnloadRenderTexture(target);
-    UnloadTexture(cardTexture);
 
     // 3. Clean up
     CloseWindow();

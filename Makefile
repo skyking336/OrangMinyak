@@ -13,8 +13,11 @@ configure:
 build: configure
 	cmake --build build
 
-# 3. Run step: Build first, then execute the binary inside build directory
-run: build
+# 3. Run step: execute the binary inside build directory
+run:
+	./build/OrangMinyak.exe
+
+buildrun: build
 	./build/OrangMinyak.exe
 
 # 4. Clean step: Clean compiled object files

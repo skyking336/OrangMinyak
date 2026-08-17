@@ -7,6 +7,7 @@
 
 class Enemy : public GameObject2D{
     public:
+        ObjectType type = ObjectType::UI;
         std::string TexturePath = "assets/OilMan.png";
         std::string getTexturePath() const {return TexturePath;}
 
