@@ -8,6 +8,7 @@
 #include "Enemy.hpp"
 #include <vector>
 #include <algorithm>
+#include "SimpleTexture.hpp"
 
 
 int main()
@@ -46,12 +47,18 @@ int main()
 
     Texture2D cardTexture = assets.getOrLoadTexture("assets/Card.png");
     Texture2D monster = assets.getOrLoadTexture("assets/OilMan.png");
+    Texture2D backgr = assets.getOrLoadTexture("assets/Background.png");
 
     Enemy oilman = Enemy();
     oilman.position.x = virtualWidth/2;
     oilman.position.y = virtualHeight/2;
-    oilman.hidden = false;
     oilman.zIndex = 0; 
+
+    SimpleTexture background = SimpleTexture("assets/Background.png");
+    background.position.x = virtualWidth/2;
+    background.position.y = virtualHeight/2;
+    background.zIndex = -1;
+    background.scale = {0.5f, 0.5f};
 
     int x = -100;
     for (Card& c : player.getHand()){
@@ -59,7 +66,6 @@ int main()
         c.position.x = (virtualWidth/2) + x;
         c.position.y = (virtualHeight/2) + 300;
         c.scale = {2.0f, 2.0f};
-        c.hidden = false;
         c.zIndex = 1; 
         x += 100;
     }
@@ -83,13 +89,14 @@ int main()
         //-----------------------
         BeginTextureMode(target);
             ClearBackground(DARKGREEN);
-            DrawTextCentered("Oil Man Prototype", virtualWidth/2, virtualHeight/2, 20, RAYWHITE);
-            DrawText(TextFormat("Win: %d", win), 0, 0, 40, RAYWHITE);
-            DrawText(TextFormat("Lose: %d", lose), 0, 30, 40, RAYWHITE);
+
 
             std::vector<GameObject2D*> renderQueue;
             if (!oilman.hidden) {
                 renderQueue.push_back(&oilman);
+            }
+            if (!background.hidden) {
+                renderQueue.push_back(&background);
             }
             for (Card& c : player.getHand()) {
                 if (!c.hidden) {
@@ -97,7 +104,7 @@ int main()
                 }
             }
 
-            std::sort(renderQueue.begin(), renderQueue.end(), [](GameObject2D* a, GameObject2D* b) {
+            std::stable_sort(renderQueue.begin(), renderQueue.end(), [](GameObject2D* a, GameObject2D* b) {
                 return a->zIndex < b->zIndex;
             });
 
@@ -105,6 +112,10 @@ int main()
             for (GameObject2D* obj : renderQueue) {
                 obj->draw(assets);
             }
+
+            DrawTextCentered("Oil Man Prototype", virtualWidth/2, virtualHeight/2, 20, RAYWHITE);
+            DrawText(TextFormat("Win: %d", win), 0, 0, 40, RAYWHITE);
+            DrawText(TextFormat("Lose: %d", lose), 0, 30, 40, RAYWHITE);
 
         EndTextureMode();
         
