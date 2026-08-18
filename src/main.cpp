@@ -6,6 +6,41 @@
 #include "Components.hpp"
 #include "RenderSystem.hpp"
 #include "InputSystem.hpp"
+#include "GameState.hpp"
+
+void SyncVisualCards(entt::registry& registry, AssetManager& assets, const GameState& game) {
+    auto view = registry.view<CardComponent>();
+    registry.destroy(view.begin(), view.end());
+
+    Texture2D cardTex = assets.getOrLoadTexture("assets/Card.png");
+
+    int startX = -300; 
+    for (size_t i = 0; i < game.hand.size(); i++) {
+        auto cardEntity = registry.create();
+        int cardRank = game.hand[i];
+        
+        registry.emplace<TransformComponent>(cardEntity, Vector2{720.0f + startX, 405.0f + 300.0f}, Vector2{2.0f, 2.0f});
+        registry.emplace<RenderComponent>(cardEntity, WHITE, false, 1);
+        registry.emplace<CardComponent>(cardEntity, cardRank, CardLocation::HAND);
+        registry.emplace<BoxColliderComponent>(cardEntity, (float)cardTex.width, (float)cardTex.height);
+        registry.emplace<SpriteComponent>(cardEntity, "assets/Card.png");
+        registry.emplace<TextComponent>(cardEntity, std::to_string(cardRank), "assets/fonts/fibberish.ttf", BLACK, 45);
+        
+        startX += 300; 
+    }
+
+    if (game.switchSlot.has_value()) {
+        auto slotEntity = registry.create();
+        int cardRank = game.switchSlot.value();
+        
+        registry.emplace<TransformComponent>(slotEntity, Vector2{720.0f - 400.0f, 405.0f}, Vector2{2.0f, 2.0f});
+        registry.emplace<RenderComponent>(slotEntity, WHITE, false, 1);
+        registry.emplace<CardComponent>(slotEntity, cardRank, CardLocation::SWITCH_SLOT);
+        registry.emplace<BoxColliderComponent>(slotEntity, (float)cardTex.width, (float)cardTex.height);
+        registry.emplace<SpriteComponent>(slotEntity, "assets/Card.png");
+        registry.emplace<TextComponent>(slotEntity, std::to_string(cardRank), "assets/fonts/fibberish.ttf", BLUE, 45); 
+    }
+}
 
 int main() {
     InitWindow(1440, 810, "OilMan");
@@ -13,28 +48,24 @@ int main() {
 
     const int windowWidth = 1440;
     const int windowHeight = 810;  
-
-    const int virtualWidth = 1440;
-    const int virtualHeight = 810;
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    ToggleBorderlessWindowed();
-
-    RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
-    SetTextureFilter(target.texture, TEXTURE_FILTER_POINT); 
-
+    entt::registry registry;
     AssetManager assets;
     
-    entt::registry registry;
+    // Initialize Game State
+    GameState game;
+    game.drawCards(3); 
 
-    // ==========================================
-    // SCENE SETUP
-    // ask the registry to create an ID, 
-    // and then we 'emplace' (attach) data components to that ID
-    // ==========================================
+    // --- SETUP SCENE ---
+    
+    // Virtual resolution target
+    int virtualWidth = 1440;
+    int virtualHeight = 810;
+    RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
+    SetTextureFilter(target.texture, TEXTURE_FILTER_POINT);
 
     // Background Entity
     auto bgEntity = registry.create();
-    registry.emplace<TransformComponent>(bgEntity, Vector2{720.0f, 405.0f}, Vector2{0.5f, 0.5f});
+    registry.emplace<TransformComponent>(bgEntity, Vector2{720.0f, 405.0f});
     registry.emplace<RenderComponent>(bgEntity, WHITE, false, -1);
     registry.emplace<SpriteComponent>(bgEntity, "assets/Background.png");
 
@@ -45,24 +76,8 @@ int main() {
     registry.emplace<SpriteComponent>(enemyEntity, "assets/Oilman.png"); 
     registry.emplace<EnemyComponent>(enemyEntity); 
 
-    Texture2D cardTex = assets.getOrLoadTexture("assets/Card.png");
-
-    // Card Entities
-    int x = -500;
-    for (int i = 0; i < 3; i++) {
-        auto cardEntity = registry.create();
-        registry.emplace<TransformComponent>(cardEntity, Vector2{720.0f + x, 405.0f + 300.0f}, Vector2{2.0f, 2.0f});
-        registry.emplace<RenderComponent>(cardEntity, WHITE, false, 1);
-        registry.emplace<CardComponent>(cardEntity, i);
-        
-        // Feed the exact pixel width and height of the original image
-        registry.emplace<BoxColliderComponent>(cardEntity, (float)cardTex.width, (float)cardTex.height);
-        
-        registry.emplace<SpriteComponent>(cardEntity, "assets/Card.png");
-        registry.emplace<TextComponent>(cardEntity, std::to_string(i), "assets/fonts/fibberish.ttf", BLACK, 45);
-        
-        x += 300;
-    }
+    // Initial Sync
+    SyncVisualCards(registry, assets, game);
 
     // UI Text Entity
     auto uiEntity = registry.create();
@@ -73,7 +88,7 @@ int main() {
     // A circle that follows the cursor 
     auto cursorEntity = registry.create();
     registry.emplace<TransformComponent>(cursorEntity, Vector2{0.0f, 0.0f});
-    registry.emplace<RenderComponent>(cursorEntity, GREEN, false, 999); // Draw it on top of everything!
+    registry.emplace<RenderComponent>(cursorEntity, GREEN, false, 999); 
     registry.emplace<CursorFollowerComponent>(cursorEntity);
     registry.emplace<CircleRenderComponent>(cursorEntity, 15.0f, RED);
 

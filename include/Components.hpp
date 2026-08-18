@@ -38,8 +38,16 @@ struct TextComponent {
 // Instead of inheriting from GameObject2D, you just attach these structs
 // ==========================================
 
+enum class CardLocation {
+    DECK,
+    HAND,
+    SWITCH_SLOT,
+    DISCARD
+};
+
 struct CardComponent {
     int rank = 0;
+    CardLocation location = CardLocation::DECK;
 };
 
 struct EnemyComponent {
