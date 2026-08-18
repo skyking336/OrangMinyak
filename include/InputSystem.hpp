@@ -8,7 +8,7 @@
 
 class InputSystem {
 public:
-    static void Update(entt::registry& registry, int virtualWidth, int virtualHeight, GameState& game) {
+    static void Update(entt::registry& registry, int virtualWidth, int virtualHeight, GameState& game, GameScene& nextScene) {
         
         // Calculate the Virtual Mouse Position
         // Because we allow resizable window, GetMousePosition() returns the physical window pixels.
@@ -24,6 +24,14 @@ public:
         
         for (auto [entity, transform, collider] : view.each()) {
             
+            if (registry.any_of<TweenComponent>(entity)) {
+                auto& tween = registry.get<TweenComponent>(entity);
+                if (tween.positionTween.has_value() || tween.scaleTween.has_value() || tween.colorTween.has_value()) {
+                    collider.isHovered = false;
+                    continue; 
+                }
+            }
+
             // Calculate the actual bounding box in the virtual world
             // Our drawing is centered, so the top-left corner is position - (width * scale / 2)
             float scaledWidth = collider.width * transform.scale.x;
@@ -40,7 +48,6 @@ public:
                 collider.isHovered = true;
                 transform.scale = { 2.2f, 2.2f }; 
                 
-                // CLICK DETECTION
                 if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                     if (registry.any_of<ActionCardComponent>(entity)) {
                         auto& actionCard = registry.get<ActionCardComponent>(entity);
@@ -49,6 +56,13 @@ public:
                     else if (registry.any_of<CardComponent>(entity)) {
                         auto& numberCard = registry.get<CardComponent>(entity);
                         TraceLog(LOG_INFO, "CLICKED NUMBER CARD: %d", numberCard.rank);
+                    }
+                    else if (registry.any_of<ButtonComponent>(entity)) {
+                        auto& button = registry.get<ButtonComponent>(entity);
+                        TraceLog(LOG_INFO, "CLICKED BUTTON: %s", button.buttonId.c_str());
+                        if (button.buttonId == "btn_play") {
+                            nextScene = GameScene::GAMEPLAY;
+                        }
                     }
                 }
             } else {

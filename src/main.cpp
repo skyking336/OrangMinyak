@@ -7,46 +7,50 @@
 #include "Components.hpp"
 #include "RenderSystem.hpp"
 #include "InputSystem.hpp"
+#include "TweenSystem.hpp"
 #include "GameState.hpp"
 
-void SyncVisualCards(entt::registry& registry, AssetManager& assets, const GameState& game) {
-    auto view = registry.view<CardComponent>();
-    registry.destroy(view.begin(), view.end());
+void LoadMainMenu(entt::registry& registry, AssetManager& assets) {
 
-    auto actionView = registry.view<ActionCardComponent>();
-    registry.destroy(actionView.begin(), actionView.end());
+    auto bgEntity = registry.create();
+    registry.emplace<TransformComponent>(bgEntity, Vector2{720.0f, 405.0f});
+    registry.emplace<RenderComponent>(bgEntity, WHITE, false, -1);
+    registry.emplace<SpriteComponent>(bgEntity, "assets/Background.png");
 
-    Texture2D cardTex = assets.getOrLoadTexture("assets/Card.png");
+    auto titleEntity = registry.create();
+    registry.emplace<TransformComponent>(titleEntity, Vector2{720.0f, 300.0f});
+    registry.emplace<RenderComponent>(titleEntity, WHITE, false, 10);
+    registry.emplace<TextComponent>(titleEntity, "Oil Man", "assets/fonts/fibberish.ttf", WHITE, 120);
 
-    int startX = -300; 
-    // for (size_t i = 0; i < game.hand.size(); i++) {
-    //     auto cardEntity = registry.create();
-    //     int cardRank = game.hand[i];
-        
-    //     registry.emplace<TransformComponent>(cardEntity, Vector2{720.0f + startX, 405.0f + 300.0f}, Vector2{2.0f, 2.0f});
-    //     registry.emplace<RenderComponent>(cardEntity, WHITE, false, 1);
-    //     registry.emplace<CardComponent>(cardEntity, cardRank, CardLocation::HAND);
-    //     registry.emplace<BoxColliderComponent>(cardEntity, (float)cardTex.width, (float)cardTex.height);
-    //     registry.emplace<SpriteComponent>(cardEntity, "assets/Card.png");
-    //     registry.emplace<TextComponent>(cardEntity, std::to_string(cardRank), "assets/fonts/fibberish.ttf", BLACK, 45);
-        
-    //     startX += 300; 
-    // }
+    auto playBtn = registry.create();
+    registry.emplace<TransformComponent>(playBtn, Vector2{720.0f, 550.0f});
+    registry.emplace<RenderComponent>(playBtn, WHITE, false, 10);
+    registry.emplace<TextComponent>(playBtn, "Start Game", "assets/fonts/fibberish.ttf", GREEN, 60);
+    registry.emplace<BoxColliderComponent>(playBtn, 300.0f, 80.0f); 
+    registry.emplace<ButtonComponent>(playBtn, "btn_play");
+}
 
-    // if (game.switchSlot.has_value()) {
-    //     auto slotEntity = registry.create();
-    //     int cardRank = game.switchSlot.value();
-        
-    //     registry.emplace<TransformComponent>(slotEntity, Vector2{720.0f - 400.0f, 405.0f}, Vector2{2.0f, 2.0f});
-    //     registry.emplace<RenderComponent>(slotEntity, WHITE, false, 1);
-    //     registry.emplace<CardComponent>(slotEntity, cardRank, CardLocation::SWITCH_SLOT);
-    //     registry.emplace<BoxColliderComponent>(slotEntity, (float)cardTex.width, (float)cardTex.height);
-    //     registry.emplace<SpriteComponent>(slotEntity, "assets/Card.png");
-    //     registry.emplace<TextComponent>(slotEntity, std::to_string(cardRank), "assets/fonts/fibberish.ttf", BLUE, 45);  
-    // }
+void LoadGameScene(entt::registry& registry, AssetManager& assets, const GameState& game) {
+    auto bgEntity = registry.create();
+    registry.emplace<TransformComponent>(bgEntity, Vector2{720.0f, 405.0f});
+    registry.emplace<RenderComponent>(bgEntity, WHITE, false, -1);
+    registry.emplace<SpriteComponent>(bgEntity, "assets/Background.png");
 
-    // Spawn the Available Action Cards (Top of screen)
-    int actionStartX = -200;
+    auto enemyEntity = registry.create();
+    registry.emplace<TransformComponent>(enemyEntity, Vector2{720.0f, 405.0f});
+    registry.emplace<RenderComponent>(enemyEntity, WHITE, false, 0);
+    registry.emplace<SpriteComponent>(enemyEntity, "assets/Oilman.png"); 
+    registry.emplace<EnemyComponent>(enemyEntity); 
+
+    auto uiEntity = registry.create();
+    registry.emplace<TransformComponent>(uiEntity, Vector2{720.0f, 50.0f});
+    registry.emplace<RenderComponent>(uiEntity, WHITE, false, 10);
+    registry.emplace<TextComponent>(uiEntity, "Gameplay Scene", "assets/fonts/fibberish.ttf", WHITE, 40);
+
+    float spacing = 200.0f;
+    float totalWidth = (game.actionHand.size() > 0) ? (game.actionHand.size() - 1) * spacing : 0;
+    float startTargetX = 720.0f - (totalWidth / 2.0f);
+
     for (size_t i = 0; i < game.actionHand.size(); ++i) {
         auto actionEntity = registry.create();
         ActionType actType = game.actionHand[i];
@@ -54,23 +58,45 @@ void SyncVisualCards(entt::registry& registry, AssetManager& assets, const GameS
         std::string assetPath = GameConfig::ACTION_DICT.at(actType).assetPath;
         Texture2D actTex = assets.getOrLoadTexture(assetPath);
 
-        // Position them higher up on the screen
-        registry.emplace<TransformComponent>(actionEntity, Vector2{720.0f + actionStartX, 405.0f + 250.0f}, Vector2{2.0f, 2.0f});
+        float targetY = 605.0f;
+        float deckX = 1200.0f;
+        float deckY = 605.0f; 
+        float targetX = startTargetX + (i * spacing);
+        
+        registry.emplace<TransformComponent>(actionEntity, Vector2{deckX, deckY}, Vector2{2.0f, 2.0f});
         registry.emplace<RenderComponent>(actionEntity, WHITE, false, 1);
         registry.emplace<ActionCardComponent>(actionEntity, actType);
         registry.emplace<BoxColliderComponent>(actionEntity, (float)actTex.width, (float)actTex.height);
         registry.emplace<SpriteComponent>(actionEntity, assetPath);
         
-        actionStartX += 300; // Space them out
+        // Add a Position Tween with delay (dealing from right to left)
+        TweenComponent tc;
+        uint32_t delay = (game.actionHand.size() - 1 - i) * 150U; 
+        
+        if (delay > 0) {
+            tc.positionTween = tweeny::from(deckX, deckY)
+                               .to(deckX, deckY).during(delay)
+                               .to(targetX, targetY).during(1000U).via(tweeny::easing::exponentialOut)
+                               .build();
+        } else {
+            tc.positionTween = tweeny::from(deckX, deckY)
+                               .to(targetX, targetY).during(1000U).via(tweeny::easing::exponentialOut)
+                               .build();
+        }
+        
+        registry.emplace<TweenComponent>(actionEntity, tc);
     }
 }
 
 int main() {
-    InitWindow(1440, 810, "OilMan");
-    SetTargetFPS(60);
 
     const int windowWidth = 1440;
     const int windowHeight = 810;  
+    InitWindow(windowWidth, windowHeight, "OilMan");
+    SetTargetFPS(60);
+    // ToggleFullscreen();
+
+
     entt::registry registry;
     AssetManager assets;
     
@@ -86,27 +112,11 @@ int main() {
     RenderTexture2D target = LoadRenderTexture(virtualWidth, virtualHeight);
     SetTextureFilter(target.texture, TEXTURE_FILTER_POINT);
 
-    // Background Entity
-    auto bgEntity = registry.create();
-    registry.emplace<TransformComponent>(bgEntity, Vector2{720.0f, 405.0f});
-    registry.emplace<RenderComponent>(bgEntity, WHITE, false, -1);
-    registry.emplace<SpriteComponent>(bgEntity, "assets/Background.png");
+    // Initial Scene State
+    GameScene currentScene = GameScene::MAIN_MENU;
+    GameScene nextScene = GameScene::MAIN_MENU;
 
-    // Enemy Entity (Oilman)
-    auto enemyEntity = registry.create();
-    registry.emplace<TransformComponent>(enemyEntity, Vector2{720.0f, 405.0f});
-    registry.emplace<RenderComponent>(enemyEntity, WHITE, false, 0);
-    registry.emplace<SpriteComponent>(enemyEntity, "assets/Oilman.png"); 
-    registry.emplace<EnemyComponent>(enemyEntity); 
-
-    // Initial Sync
-    SyncVisualCards(registry, assets, game);
-
-    // UI Text Entity
-    auto uiEntity = registry.create();
-    registry.emplace<TransformComponent>(uiEntity, Vector2{720.0f, 405.0f});
-    registry.emplace<RenderComponent>(uiEntity, WHITE, false, 10);
-    registry.emplace<TextComponent>(uiEntity, "Oil Man Prototype", "assets/fonts/fibberish.ttf", WHITE, 40);
+    LoadMainMenu(registry, assets);
 
     // A circle that follows the cursor 
     auto cursorEntity = registry.create();
@@ -120,13 +130,31 @@ int main() {
     // ==========================================
     while (!WindowShouldClose()) {
         
+        if (currentScene != nextScene) {
+            registry.clear(); 
+
+            // Recreate global entities
+            cursorEntity = registry.create();
+            registry.emplace<TransformComponent>(cursorEntity, Vector2{0.0f, 0.0f});
+            registry.emplace<RenderComponent>(cursorEntity, GREEN, false, 999); 
+            registry.emplace<CursorFollowerComponent>(cursorEntity);
+            registry.emplace<CircleRenderComponent>(cursorEntity, 15.0f, RED);
+
+            if (nextScene == GameScene::MAIN_MENU) {
+                LoadMainMenu(registry, assets);
+            } else if (nextScene == GameScene::GAMEPLAY) {
+                LoadGameScene(registry, assets, game);
+            }
+            currentScene = nextScene;
+        }
+
         // LOGIC PHASE
-        // The InputSystem will map physical mouse to the virtual screen
-        // and check if it intersects with any BoxColliderComponents
-        InputSystem::Update(registry, virtualWidth, virtualHeight, game);
+        InputSystem::Update(registry, virtualWidth, virtualHeight, game, nextScene);
 
 
         // RENDER PHASE
+        TweenSystem::Update(registry);
+
         BeginTextureMode(target);
             ClearBackground(DARKGREEN);
             

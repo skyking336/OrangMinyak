@@ -14,6 +14,12 @@ struct ActionData {
     std::string assetPath;
 };
 
+enum class GameScene {
+    MAIN_MENU,
+    GAMEPLAY,
+    GAME_OVER
+};
+
 enum class ActionType {
     RedFist,
     RedSlippers,

@@ -1,6 +1,8 @@
 #pragma once
 #include "raylib.h"
 #include <string>
+#include <optional>
+#include "tweeny/tweeny.h"
 #include "Constants.hpp"
 
 // ==========================================
@@ -34,10 +36,20 @@ struct TextComponent {
     Font font = {0}; 
 };
 
+struct TweenComponent {
+    std::optional<tweeny::tween<float, float>> positionTween; 
+    std::optional<tweeny::tween<float, float>> scaleTween;    
+    std::optional<tweeny::tween<unsigned char, unsigned char, unsigned char, unsigned char>> colorTween; 
+};
+
 // ==========================================
 // TAGS / GAMEPLAY DATA
 // Instead of inheriting from GameObject2D, you just attach these structs
 // ==========================================
+
+struct ButtonComponent {
+    std::string buttonId;
+};
 
 enum class CardLocation {
     DECK,
