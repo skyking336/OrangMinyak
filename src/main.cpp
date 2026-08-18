@@ -5,6 +5,7 @@
 #include "AssetManager.hpp"
 #include "Components.hpp"
 #include "RenderSystem.hpp"
+#include "InputSystem.hpp"
 
 int main() {
     InitWindow(1440, 810, "OilMan");
@@ -44,6 +45,8 @@ int main() {
     registry.emplace<SpriteComponent>(enemyEntity, "assets/Oilman.png"); 
     registry.emplace<EnemyComponent>(enemyEntity); 
 
+    Texture2D cardTex = assets.getOrLoadTexture("assets/Card.png");
+
     // Card Entities
     int x = -500;
     for (int i = 0; i < 3; i++) {
@@ -51,6 +54,10 @@ int main() {
         registry.emplace<TransformComponent>(cardEntity, Vector2{720.0f + x, 405.0f + 300.0f}, Vector2{2.0f, 2.0f});
         registry.emplace<RenderComponent>(cardEntity, WHITE, false, 1);
         registry.emplace<CardComponent>(cardEntity, i);
+        
+        // Feed the exact pixel width and height of the original image
+        registry.emplace<BoxColliderComponent>(cardEntity, (float)cardTex.width, (float)cardTex.height);
+        
         registry.emplace<SpriteComponent>(cardEntity, "assets/Card.png");
         registry.emplace<TextComponent>(cardEntity, std::to_string(i), "assets/fonts/fibberish.ttf", BLACK, 45);
         
@@ -63,14 +70,22 @@ int main() {
     registry.emplace<RenderComponent>(uiEntity, WHITE, false, 10);
     registry.emplace<TextComponent>(uiEntity, "Oil Man Prototype", "assets/fonts/fibberish.ttf", BLACK, 40);
 
+    // A circle that follows the cursor 
+    auto cursorEntity = registry.create();
+    registry.emplace<TransformComponent>(cursorEntity, Vector2{0.0f, 0.0f});
+    registry.emplace<RenderComponent>(cursorEntity, GREEN, false, 999); // Draw it on top of everything!
+    registry.emplace<CursorFollowerComponent>(cursorEntity);
+    registry.emplace<CircleRenderComponent>(cursorEntity, 15.0f, RED);
+
     // ==========================================
     // GAME LOOP
     // ==========================================
     while (!WindowShouldClose()) {
         
         // LOGIC PHASE
-        // If we have a MovementSystem, call it here:
-        // MovementSystem::Update(register, run or jump)
+        // The InputSystem will map physical mouse to the virtual screen
+        // and check if it intersects with any BoxColliderComponents
+        InputSystem::Update(registry, virtualWidth, virtualHeight);
 
 
         // RENDER PHASE

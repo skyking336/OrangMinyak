@@ -22,7 +22,7 @@ struct RenderComponent {
 
 struct SpriteComponent {
     std::string texturePath;
-    Texture2D texture = {0}; // AssetManager will fill this in when the render system runs
+    Texture2D texture = {0}; 
 };
 
 struct TextComponent {
@@ -30,7 +30,7 @@ struct TextComponent {
     std::string fontPath;
     Color color = BLACK;
     int fontSize = 20;
-    Font font = {0}; // AssetManager will fill this in
+    Font font = {0}; 
 };
 
 // ==========================================
@@ -46,4 +46,17 @@ struct EnemyComponent {
     // Enemy specific stats like health, damage, AI state
 };
 
+struct BoxColliderComponent {
+    float width = 10.0f;
+    float height = 10.0f;
+    bool isHovered = false; 
+};
 
+struct CircleRenderComponent {
+    float radius = 10.0f;
+    Color color = RED;
+};
+
+struct CursorFollowerComponent {
+    
+};
