@@ -1,6 +1,7 @@
 #pragma once
 #include "raylib.h"
 #include <string>
+#include "Constants.hpp"
 
 // ==========================================
 // COMPONENTS
@@ -48,6 +49,10 @@ enum class CardLocation {
 struct CardComponent {
     int rank = 0;
     CardLocation location = CardLocation::DECK;
+};
+
+struct ActionCardComponent {
+    ActionType type;
 };
 
 struct EnemyComponent {

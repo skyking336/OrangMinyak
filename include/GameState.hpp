@@ -20,17 +20,29 @@ public:
 
     // Action Deck
     std::vector<ActionType> actionDeck = {
-        ActionType::RedFist, ActionType::RedFist, 
-        ActionType::BlueArmsUp, ActionType::BlueArmsUp, 
-        ActionType::WhiteNasiLemak
+        ActionType::RedFist, ActionType::RedFist, ActionType::RedFist, 
+        ActionType::RedHanger,
+        ActionType::RedSlippers,
+        ActionType::BlueArmsUp, ActionType::BlueArmsUp, ActionType::BlueArmsUp, 
+        ActionType::BlueAddMath, 
+        ActionType::BluePolis,
+        ActionType::WhiteNasiLemak, ActionType::WhiteNasiLemak, ActionType::WhiteNasiLemak, 
+        ActionType::WhiteHospital,
+        ActionType::WhitePraying,
+        ActionType::YellowSword
     };
     
-    // The actions drawn for them to pick from this cycle
-    std::vector<ActionType> availableActions;
+    std::vector<ActionType> actionHand;
     std::optional<ActionType> selectedAction;
 
     GameState() {
+        // Shuffle action deck at start
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(actionDeck.begin(), actionDeck.end(), g);
+        
         resetDeck();
+        replenishActionHand(); // Draw up to 3 action cards to start
     }
 
     void resetDeck() {
@@ -46,6 +58,14 @@ public:
         discardPile.clear();
         hand.clear();
         switchSlot = std::nullopt;
+    }
+
+    // Draws Action Cards until the Action Hand has 3 cards
+    void replenishActionHand() {
+        while (actionHand.size() < GameConfig::MAXIMUM_HAND_SIZE && !actionDeck.empty()) {
+            actionHand.push_back(actionDeck.front());
+            actionDeck.erase(actionDeck.begin());
+        }
     }
 
     std::vector<int> drawCards(int count) {

@@ -4,9 +4,11 @@
 #include "Components.hpp"
 #include <algorithm>
 
+#include "GameState.hpp"
+
 class InputSystem {
 public:
-    static void Update(entt::registry& registry, int virtualWidth, int virtualHeight) {
+    static void Update(entt::registry& registry, int virtualWidth, int virtualHeight, GameState& game) {
         
         // Calculate the Virtual Mouse Position
         // Because we allow resizable window, GetMousePosition() returns the physical window pixels.
@@ -37,6 +39,18 @@ public:
             if (CheckCollisionPointRec(virtualMouse, rect)) {
                 collider.isHovered = true;
                 transform.scale = { 2.2f, 2.2f }; 
+                
+                // CLICK DETECTION
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                    if (registry.any_of<ActionCardComponent>(entity)) {
+                        auto& actionCard = registry.get<ActionCardComponent>(entity);
+                        TraceLog(LOG_INFO, "CLICKED ACTION CARD: %s", GameConfig::ACTION_DICT.at(actionCard.type).name.c_str());
+                    }
+                    else if (registry.any_of<CardComponent>(entity)) {
+                        auto& numberCard = registry.get<CardComponent>(entity);
+                        TraceLog(LOG_INFO, "CLICKED NUMBER CARD: %d", numberCard.rank);
+                    }
+                }
             } else {
                 collider.isHovered = false;
                 transform.scale = { 2.0f, 2.0f };
