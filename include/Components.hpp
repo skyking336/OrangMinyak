@@ -21,6 +21,7 @@ struct RenderComponent {
     Color tint = WHITE;
     bool hidden = false;
     int zIndex = 0;
+    int baseZIndex = 0;
 };
 
 struct SpriteComponent {
@@ -40,6 +41,7 @@ struct TweenComponent {
     std::optional<tweeny::tween<float, float>> positionTween; 
     std::optional<tweeny::tween<float, float>> scaleTween;    
     std::optional<tweeny::tween<unsigned char, unsigned char, unsigned char, unsigned char>> colorTween; 
+    std::optional<tweeny::tween<float>> rotationTween;
 };
 
 // ==========================================
@@ -56,6 +58,14 @@ enum class CardLocation {
     HAND,
     SWITCH_SLOT,
     DISCARD
+};
+
+struct HoverTiltComponent {
+    float currentTiltX = 0.0f;
+    float currentTiltY = 0.0f;
+    float targetTiltX = 0.0f;
+    float targetTiltY = 0.0f;
+    float baseRotation = 0.0f;
 };
 
 struct CardComponent {

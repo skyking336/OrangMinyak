@@ -45,7 +45,28 @@ public:
 
             if (registry.any_of<SpriteComponent>(entity)) {
                 auto& sprite = registry.get<SpriteComponent>(entity);
+                
+                bool useShader = registry.any_of<HoverTiltComponent>(entity);
+                if (useShader) {
+                    auto& tilt = registry.get<HoverTiltComponent>(entity);
+                    Shader shader = assets.getOrLoadShader("assets/shaders/tilt.vs", "");
+                    
+                    int tiltLoc = GetShaderLocation(shader, "tilt");
+                    float tiltVec[2] = { tilt.currentTiltX, tilt.currentTiltY };
+                    SetShaderValue(shader, tiltLoc, tiltVec, SHADER_UNIFORM_VEC2);
+                    
+                    int originLoc = GetShaderLocation(shader, "origin");
+                    float originVec[2] = { transform.position.x, transform.position.y };
+                    SetShaderValue(shader, originLoc, originVec, SHADER_UNIFORM_VEC2);
+                    
+                    BeginShaderMode(shader);
+                }
+
                 DrawTextureCentered(sprite.texture, transform.position, transform.scale, transform.rotation, render.tint);
+                
+                if (useShader) {
+                    EndShaderMode();
+                }
             }
             
             if (registry.any_of<TextComponent>(entity)) {

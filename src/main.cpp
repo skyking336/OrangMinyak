@@ -28,6 +28,7 @@ void LoadMainMenu(entt::registry& registry, AssetManager& assets) {
     registry.emplace<TextComponent>(playBtn, "Start Game", "assets/fonts/fibberish.ttf", GREEN, 60);
     registry.emplace<BoxColliderComponent>(playBtn, 300.0f, 80.0f); 
     registry.emplace<ButtonComponent>(playBtn, "btn_play");
+
 }
 
 void LoadGameScene(entt::registry& registry, AssetManager& assets, const GameState& game) {
@@ -47,9 +48,14 @@ void LoadGameScene(entt::registry& registry, AssetManager& assets, const GameSta
     registry.emplace<RenderComponent>(uiEntity, WHITE, false, 10);
     registry.emplace<TextComponent>(uiEntity, "Gameplay Scene", "assets/fonts/fibberish.ttf", WHITE, 40);
 
-    float spacing = 200.0f;
+    float spacing = 120.0f;
     float totalWidth = (game.actionHand.size() > 0) ? (game.actionHand.size() - 1) * spacing : 0;
     float startTargetX = 720.0f - (totalWidth / 2.0f);
+    
+    // Calculate arc parameters
+    float baseMaxAngle = 25.0f; 
+    float maxAngle = baseMaxAngle - (game.actionHand.size() * 1.5f);
+    if (maxAngle < 5.0f) maxAngle = 5.0f;
 
     for (size_t i = 0; i < game.actionHand.size(); ++i) {
         auto actionEntity = registry.create();
@@ -58,30 +64,61 @@ void LoadGameScene(entt::registry& registry, AssetManager& assets, const GameSta
         std::string assetPath = GameConfig::ACTION_DICT.at(actType).assetPath;
         Texture2D actTex = assets.getOrLoadTexture(assetPath);
 
-        float targetY = 605.0f;
-        float deckX = 1200.0f;
-        float deckY = 605.0f; 
+        float normalizedIdx = 0.0f;
+        float targetRotation = 0.0f;
+        float yOffset = 0.0f;
+        
+        if (game.actionHand.size() > 1) {
+            normalizedIdx = (float)i / (float)(game.actionHand.size() - 1);
+            float mappedIdx = (normalizedIdx * 2.0f) - 1.0f; // -1.0 to 1.0
+            targetRotation = mappedIdx * maxAngle;
+            
+            float arcHeight = 40.0f;
+            yOffset = (mappedIdx * mappedIdx) * arcHeight;
+        }
+
+        float targetY = 655.0f + yOffset;
+        float deckX = 250.0f;
+        float deckY = 750.0f; 
         float targetX = startTargetX + (i * spacing);
         
-        registry.emplace<TransformComponent>(actionEntity, Vector2{deckX, deckY}, Vector2{2.0f, 2.0f});
-        registry.emplace<RenderComponent>(actionEntity, WHITE, false, 1);
+        registry.emplace<TransformComponent>(actionEntity, Vector2{deckX, deckY}, Vector2{0.0f, 0.0f});
+        registry.emplace<RenderComponent>(actionEntity, WHITE, false, (int)i + 1, (int)i + 1);
         registry.emplace<ActionCardComponent>(actionEntity, actType);
         registry.emplace<BoxColliderComponent>(actionEntity, (float)actTex.width, (float)actTex.height);
         registry.emplace<SpriteComponent>(actionEntity, assetPath);
+
+        HoverTiltComponent htc;
+        htc.baseRotation = targetRotation;
+        registry.emplace<HoverTiltComponent>(actionEntity, htc);
         
-        // Add a Position Tween with delay (dealing from right to left)
+        // Add a Position Tween with delay (dealing from left to right)
         TweenComponent tc;
-        uint32_t delay = (game.actionHand.size() - 1 - i) * 150U; 
-        
+        uint32_t delay = (game.actionHand.size() - 1 - i) * 100U; 
+        uint32_t duration = 400U;
         if (delay > 0) {
             tc.positionTween = tweeny::from(deckX, deckY)
                                .to(deckX, deckY).during(delay)
-                               .to(targetX, targetY).during(1000U).via(tweeny::easing::exponentialOut)
+                               .to(targetX, targetY).during(duration).via(tweeny::easing::circularOut)
                                .build();
+            tc.rotationTween = tweeny::from(0.0f)
+                               .to(0.0f).during(delay)
+                               .to(targetRotation).during(duration).via(tweeny::easing::exponentialOut)
+                               .build();
+            tc.scaleTween = tweeny::from(0.0f, 0.0f)
+                            .to(0.0f, 0.0f).during(delay)
+                            .to(2.0f, 2.0f).during(duration).via(tweeny::easing::backOut)
+                            .build();
         } else {
             tc.positionTween = tweeny::from(deckX, deckY)
-                               .to(targetX, targetY).during(1000U).via(tweeny::easing::exponentialOut)
+                               .to(targetX, targetY).during(duration).via(tweeny::easing::circularOut)
                                .build();
+            tc.rotationTween = tweeny::from(0.0f)
+                               .to(targetRotation).during(duration).via(tweeny::easing::exponentialOut)
+                               .build();
+            tc.scaleTween = tweeny::from(0.0f, 0.0f)
+                            .to(2.0f, 2.0f).during(duration).via(tweeny::easing::backOut)
+                            .build();
         }
         
         registry.emplace<TweenComponent>(actionEntity, tc);
@@ -130,6 +167,11 @@ int main() {
     // ==========================================
     while (!WindowShouldClose()) {
         
+        float dt = GetFrameTime();
+
+        // Cap dt to prevent massive jumps when window lags or initializes
+        if (dt > 0.033f) dt = 0.016f;
+        
         if (currentScene != nextScene) {
             registry.clear(); 
 
@@ -153,7 +195,7 @@ int main() {
 
 
         // RENDER PHASE
-        TweenSystem::Update(registry);
+        TweenSystem::Update(registry, dt);
 
         BeginTextureMode(target);
             ClearBackground(DARKGREEN);
@@ -171,7 +213,11 @@ int main() {
                 { (GetScreenWidth() - ((float)virtualWidth * scale)) * 0.5f, 
                   (GetScreenHeight() - ((float)virtualHeight * scale)) * 0.5f,
                   (float)virtualWidth * scale, (float)virtualHeight * scale },
-                { 0, 0 }, 0.0f, WHITE);
+                { 0.0f, 0.0f }, 0.0f, WHITE);
+            
+            // Draw Mouse Coordinates on the top right of the actual window
+            Vector2 mouse = GetMousePosition();
+            DrawText(TextFormat("X: %d Y: %d", (int)mouse.x, (int)mouse.y), GetScreenWidth() - 150, 20, 20, RAYWHITE);
         EndDrawing();
     }
     

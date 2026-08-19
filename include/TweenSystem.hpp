@@ -1,21 +1,16 @@
 #pragma once
 #include <entt/entt.hpp>
 #include "raylib.h"
+#include "raymath.h"
 #include "Components.hpp"
 #include <stdint.h>
 
 class TweenSystem {
 public:
-    static void Update(entt::registry& registry) {
-        float dt = GetFrameTime();
-        
-        // On the very first frame, Raylib's GetFrameTime() can be huge, 
-        // because it counts the window initialization time. 
-        // This would instantly skip the 1000ms tween
-        if (dt > 0.033f) dt = 0.016f; 
+    static void Update(entt::registry& registry, float dt) {
         
         // Tweeny step takes uint32_t milliseconds by default for duration-based tweens
-        uint32_t dtMs = (uint32_t)(dt * 1000.0f); 
+        uint32_t dtMs = (uint32_t)(dt * 1000.0f);  
         
         auto view = registry.view<TransformComponent, RenderComponent, TweenComponent>();
         
@@ -56,6 +51,24 @@ public:
                     tweenCmp.colorTween = std::nullopt;
                 }
             }
+            
+            if (tweenCmp.rotationTween.has_value()) {
+                auto& tw = tweenCmp.rotationTween.value();
+                tw.step(dtMs);
+                
+                transform.rotation = tw.peek();
+                
+                if (tw.progress() >= 1.0f) {
+                    tweenCmp.rotationTween = std::nullopt;
+                }
+            }
+        }
+
+        auto tiltView = registry.view<HoverTiltComponent>();
+        for (auto [entity, tilt] : tiltView.each()) {
+            float lerpSpeed = 15.0f; 
+            tilt.currentTiltX = Lerp(tilt.currentTiltX, tilt.targetTiltX, lerpSpeed * dt);
+            tilt.currentTiltY = Lerp(tilt.currentTiltY, tilt.targetTiltY, lerpSpeed * dt);
         }
     }
 };
