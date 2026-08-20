@@ -7,14 +7,16 @@
 
 // ==========================================
 // COMPONENTS
-// Components are PURE DATA structs. No logic, no virtual functions.
-// This completely replaces GameObject2D.hpp
 // ==========================================
 
 struct TransformComponent {
     Vector2 position = {0.0f, 0.0f};
     Vector2 scale = {1.0f, 1.0f};
+    Vector2 baseScale = {1.0f, 1.0f};
     float rotation = 0.0f;
+    
+    TransformComponent(Vector2 p = {0.0f, 0.0f}, Vector2 s = {1.0f, 1.0f}, float r = 0.0f)
+        : position(p), scale(s), baseScale(s), rotation(r) {}
 };
 
 struct RenderComponent {
@@ -42,11 +44,15 @@ struct TweenComponent {
     std::optional<tweeny::tween<float, float>> scaleTween;    
     std::optional<tweeny::tween<unsigned char, unsigned char, unsigned char, unsigned char>> colorTween; 
     std::optional<tweeny::tween<float>> rotationTween;
+    std::optional<tweeny::tween<float>> flipTween;
+};
+
+struct CoinFlipComponent {
+    float flipAngle = 0.0f;
 };
 
 // ==========================================
 // TAGS / GAMEPLAY DATA
-// Instead of inheriting from GameObject2D, you just attach these structs
 // ==========================================
 
 struct ButtonComponent {
@@ -78,13 +84,13 @@ struct ActionCardComponent {
 };
 
 struct EnemyComponent {
-    // Enemy specific stats like health, damage, AI state
 };
 
 struct BoxColliderComponent {
     float width = 10.0f;
     float height = 10.0f;
     bool isHovered = false; 
+    bool active = true;
 };
 
 struct CircleRenderComponent {
@@ -92,6 +98,25 @@ struct CircleRenderComponent {
     Color color = RED;
 };
 
+struct RectRenderComponent {
+    float width = 50.0f;
+    float height = 200.0f;
+    Color color = BLACK;
+};
+
 struct CursorFollowerComponent {
     
 };
+
+struct PhaseTextComponent {
+};
+
+struct SumTextComponent {
+};
+
+struct CombatTextComponent {
+};
+
+struct PlayerHpTextComponent {};
+struct EnemyHpTextComponent {};
+struct HoverDescTextComponent {};

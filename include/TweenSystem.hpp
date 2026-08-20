@@ -37,6 +37,7 @@ public:
                 
                 if (tw.progress() >= 1.0f) {
                     tweenCmp.scaleTween = std::nullopt;
+                    transform.baseScale = transform.scale;
                 }
             }
 
@@ -60,6 +61,19 @@ public:
                 
                 if (tw.progress() >= 1.0f) {
                     tweenCmp.rotationTween = std::nullopt;
+                }
+            }
+            
+            if (tweenCmp.flipTween.has_value()) {
+                auto& tw = tweenCmp.flipTween.value();
+                tw.step(dtMs);
+                
+                if (registry.any_of<CoinFlipComponent>(entity)) {
+                    registry.get<CoinFlipComponent>(entity).flipAngle = tw.peek();
+                }
+                
+                if (tw.progress() >= 1.0f) {
+                    tweenCmp.flipTween = std::nullopt;
                 }
             }
         }

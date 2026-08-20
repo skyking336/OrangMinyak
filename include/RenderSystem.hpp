@@ -46,27 +46,62 @@ public:
             if (registry.any_of<SpriteComponent>(entity)) {
                 auto& sprite = registry.get<SpriteComponent>(entity);
                 
-                bool useShader = registry.any_of<HoverTiltComponent>(entity);
+                bool useShader = registry.any_of<HoverTiltComponent>(entity) || registry.any_of<CoinFlipComponent>(entity);
                 if (useShader) {
-                    auto& tilt = registry.get<HoverTiltComponent>(entity);
-                    Shader shader = assets.getOrLoadShader("assets/shaders/tilt.vs", "");
-                    
-                    int tiltLoc = GetShaderLocation(shader, "tilt");
-                    float tiltVec[2] = { tilt.currentTiltX, tilt.currentTiltY };
-                    SetShaderValue(shader, tiltLoc, tiltVec, SHADER_UNIFORM_VEC2);
-                    
-                    int originLoc = GetShaderLocation(shader, "origin");
-                    float originVec[2] = { transform.position.x, transform.position.y };
-                    SetShaderValue(shader, originLoc, originVec, SHADER_UNIFORM_VEC2);
-                    
-                    BeginShaderMode(shader);
+                    if (registry.any_of<HoverTiltComponent>(entity)) {
+                        auto& tilt = registry.get<HoverTiltComponent>(entity);
+                        Shader shader = assets.getOrLoadShader("assets/shaders/tilt.vs", "");
+                        
+                        int tiltLoc = GetShaderLocation(shader, "tilt");
+                        float tiltVec[2] = { tilt.currentTiltX, tilt.currentTiltY };
+                        SetShaderValue(shader, tiltLoc, tiltVec, SHADER_UNIFORM_VEC2);
+                        
+                        int originLoc = GetShaderLocation(shader, "origin");
+                        float originVec[2] = { transform.position.x, transform.position.y };
+                        SetShaderValue(shader, originLoc, originVec, SHADER_UNIFORM_VEC2);
+                        
+                        BeginShaderMode(shader);
+                    } else if (registry.any_of<CoinFlipComponent>(entity)) {
+                        auto& flip = registry.get<CoinFlipComponent>(entity);
+                        Shader shader = assets.getOrLoadShader("", "assets/shaders/flip.fs");
+                        
+                        int headsLoc = GetShaderLocation(shader, "headsTexture");
+                        int headsVal = 0; // texture0
+                        SetShaderValue(shader, headsLoc, &headsVal, SHADER_UNIFORM_INT);
+
+                        int flipLoc = GetShaderLocation(shader, "flipAngle");
+                        float fAngle = flip.flipAngle;
+                        SetShaderValue(shader, flipLoc, &fAngle, SHADER_UNIFORM_FLOAT);
+                        
+                        // Set tails texture
+                        Texture2D tailsTex = assets.getOrLoadTexture("assets/NumberCard.png");
+                        int tailsLoc = GetShaderLocation(shader, "tailsTexture");
+                        SetShaderValueTexture(shader, tailsLoc, tailsTex);
+                        
+                        BeginShaderMode(shader);
+                    }
                 }
 
-                DrawTextureCentered(sprite.texture, transform.position, transform.scale, transform.rotation, render.tint);
+                Vector2 drawScale = transform.scale;
+                if (registry.any_of<CoinFlipComponent>(entity)) {
+                    auto& flip = registry.get<CoinFlipComponent>(entity);
+                    drawScale.y *= abs(cos(flip.flipAngle));
+                }
+
+                DrawTextureCentered(sprite.texture, transform.position, drawScale, transform.rotation, render.tint);
                 
                 if (useShader) {
                     EndShaderMode();
                 }
+            }
+            
+            if (registry.any_of<RectRenderComponent>(entity)) {
+                auto& rect = registry.get<RectRenderComponent>(entity);
+                Rectangle r = { transform.position.x - (rect.width * transform.scale.x)/2.0f, 
+                                transform.position.y - (rect.height * transform.scale.y)/2.0f, 
+                                rect.width * transform.scale.x, 
+                                rect.height * transform.scale.y };
+                DrawRectangleRec(r, rect.color);
             }
             
             if (registry.any_of<TextComponent>(entity)) {

@@ -11,14 +11,24 @@ public:
     int playerHp = GameConfig::PLAYER_START_HP;
     int enemyHp = GameConfig::ENEMY_START_HP;
     int currentTurn = 1;
+    GamePhase currentPhase = GamePhase::ACTION_SELECTION;
+    float phaseTimer = 0.0f;
 
-    // Number Deck
+    std::string combatStatusText = "";
+
     std::vector<int> deck;
     std::vector<int> discardPile;
     std::vector<int> hand;
     std::optional<int> switchSlot;
+    bool isSwitchMode = false;
+    std::optional<int> replenishIndex = std::nullopt;
 
-    // Action Deck
+    bool resolveAnimationActive = false;
+    int resolveIndex = 0;
+    float resolveTimer = 0.0f;
+    float initialResolveDelay = 0.5f;
+    int resolveSum = 0;
+
     std::vector<ActionType> actionDeck = {
         ActionType::RedFist, ActionType::RedFist, ActionType::RedFist, 
         ActionType::RedHanger,
@@ -36,13 +46,12 @@ public:
     std::optional<ActionType> selectedAction;
 
     GameState() {
-        // Shuffle action deck at start
         std::random_device rd;
         std::mt19937 g(rd());
         std::shuffle(actionDeck.begin(), actionDeck.end(), g);
         
         resetDeck();
-        replenishActionHand(); // Draw up to 3 action cards to start
+        replenishActionHand(); 
     }
 
     void resetDeck() {
@@ -60,7 +69,6 @@ public:
         switchSlot = std::nullopt;
     }
 
-    // Draws Action Cards until the Action Hand has 3 cards
     void replenishActionHand() {
         while (actionHand.size() < GameConfig::MAXIMUM_HAND_SIZE && !actionDeck.empty()) {
             actionHand.push_back(actionDeck.front());

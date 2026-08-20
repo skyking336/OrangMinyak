@@ -1,0 +1,39 @@
+Oil Man is a game based on the local creepy pasta character, orang minyak.
+This game takes inspiration from various game like Dnd, Balatro, Slay the spire.
+
+The background story is:
+One day, while you and your friend are studying alone at your campus, suddenly a 
+big, bulky, black figure that's covered in diesel appeared from no where. 
+He started attack you guy by throwing oil at you, then he suddenly dash
+and hit one of your friend. You feel furious and wants to protect your friend,
+so you and your friend decided to use the power of friendship, and by doing random action 
+like calling the ambulance or throwing cloth hanger at the monster, in order to defeat the black
+oily figure that you guy decided to call as, "Orang Minyak".
+
+
+The rules:
+1. The Core Engine
+
+The deck consists of exactly 9 cards numbered 1 through 9.
+The game is played in strict 3-Turn cycles. The deck and discard pile are reshuffled into a fresh 9-card deck at the end of Turn 3.
+
+2. Action Cards
+
+Action Cards have thresholds, damage values, miss penalties, and specific effects (Attack, Shield, Heal, or Hybrid).
+An Action Card must be selected at the start of the turn before drawing cards.
+Once an Action Card is used, it cannot be used again until the start of a new 3-Turn cycle.
+
+3. The Switch Slot
+
+The Switch Slot can hold exactly one card and persists between turns during a cycle.
+During Turns 1 and 2, a player can place a card from their hand into an empty Switch Slot (drawing a replacement from the deck) or swap a card from their hand with the currently occupied Switch Slot.
+At the end of every turn, any card in the Switch Slot permanently loses 2 points of value.
+On Turn 3, the player is forced to pull the card from the Switch Slot into their hand.
+
+4. Combat Resolution
+
+An action is resolved by summing exactly 3 Number Cards in the player's hand against the chosen Action Card's threshold.
+Sum >= Action Threshold: 100% Hit Chance. Every 1 point over the threshold adds a 10% Critical Hit chance. A critical hit deals double damage.
+Sum is 1, 2, or 3 points below Action Threshold: Hit chance is reduced by 25% for each point below the threshold (75%, 50%, or 25% respectively).
+Sum < Action Threshold - 3: 0% Hit Chance. The attack misses and the player suffers any associated miss penalties.
+
